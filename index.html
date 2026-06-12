@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reunião escolar — checklist ao vivo</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f4f6f9; color: #1a1a2e; font-size: 15px; line-height: 1.45; padding-bottom: 90px; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 14px; }
+h1 { font-size: 19px; margin-bottom: 2px; }
+.sub { color: #667; font-size: 12.5px; margin-bottom: 12px; }
+
+/* scoreboard sticky */
+.scoreboard { position: sticky; top: 0; z-index: 50; background: #fff;
+  border: 1px solid #d8e0ea; border-radius: 12px; padding: 10px 12px; margin-bottom: 14px;
+  box-shadow: 0 2px 10px rgba(15,76,129,.08); }
+.scorerow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pill { border-radius: 999px; padding: 4px 11px; font-size: 12.5px; font-weight: 600; }
+.pill.i { background: #fbe9e7; color: #b3261e; }
+.pill.p { background: #fdf4d7; color: #8a6d00; }
+.pill.s { background: #e3f2e8; color: #1b6e3c; }
+.pill.alta { background: #e8eef7; color: #0f4c81; }
+.verdict { margin-top: 7px; font-size: 13px; font-weight: 600; padding: 7px 10px; border-radius: 8px; }
+.verdict.ok { background: #e3f2e8; color: #1b6e3c; }
+.verdict.warn { background: #fdf4d7; color: #8a6d00; }
+.verdict.bad { background: #fbe9e7; color: #b3261e; }
+.verdict.neutral { background: #eef2f7; color: #556; }
+
+/* topics */
+.topic { background: #fff; border: 1px solid #d8e0ea; border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+.thead { display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding: 11px 13px; cursor: pointer; user-select: none; }
+.thead h2 { font-size: 14.5px; color: #0f4c81; }
+.tstate { font-size: 11px; color: #889; white-space: nowrap; }
+.tbody { padding: 0 13px 12px; display: none; }
+.topic.open .tbody { display: block; }
+.q { display: flex; gap: 9px; align-items: flex-start; padding: 7px 8px; border-radius: 8px;
+  cursor: pointer; margin-bottom: 2px; }
+.q:hover { background: #f4f7fb; }
+.q.done { opacity: .45; }
+.q.done .qt { text-decoration: line-through; }
+.qcheck { width: 19px; height: 19px; min-width: 19px; border: 2px solid #9bb; border-radius: 5px;
+  margin-top: 1px; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: #fff; }
+.q.done .qcheck { background: #0f4c81; border-color: #0f4c81; }
+.qt { font-size: 13.5px; }
+.tag { font-size: 10px; font-weight: 700; color: #b3261e; background: #fbe9e7;
+  border-radius: 4px; padding: 1px 5px; margin-right: 4px; vertical-align: 1px; }
+
+/* régua */
+.regua { margin-top: 10px; border-top: 1px dashed #cdd8e4; padding-top: 10px; }
+.regua h3 { font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: #889; margin-bottom: 6px; }
+.lvl { font-size: 12px; color: #445; margin-bottom: 5px; padding-left: 9px; border-left: 3px solid; }
+.lvl.i { border-color: #b3261e; } .lvl.p { border-color: #c9a400; } .lvl.s { border-color: #1b6e3c; }
+.lvl b { font-size: 11px; }
+.lvl.i b { color: #b3261e; } .lvl.p b { color: #8a6d00; } .lvl.s b { color: #1b6e3c; }
+.rate { display: flex; gap: 7px; margin-top: 9px; }
+.rate button { flex: 1; padding: 9px 4px; border-radius: 8px; border: 1.5px solid #cdd8e4;
+  background: #fff; font-size: 12.5px; font-weight: 600; cursor: pointer; color: #556; }
+.rate button.sel.bi { background: #b3261e; border-color: #b3261e; color: #fff; }
+.rate button.sel.bp { background: #c9a400; border-color: #c9a400; color: #fff; }
+.rate button.sel.bs { background: #1b6e3c; border-color: #1b6e3c; color: #fff; }
+textarea { width: 100%; margin-top: 9px; border: 1px solid #cdd8e4; border-radius: 8px;
+  padding: 8px; font-size: 13px; font-family: inherit; resize: vertical; min-height: 44px; background: #fafcfe; }
+
+/* red flags */
+.flags { background: #fff; border: 1.5px solid #e7b8b3; border-radius: 12px; margin-bottom: 12px; }
+.flags .thead h2 { color: #b3261e; }
+.flag { display: flex; gap: 9px; align-items: flex-start; padding: 7px 8px; border-radius: 8px; cursor: pointer; }
+.flag:hover { background: #fdf6f5; }
+.flag .qcheck { border-radius: 50%; border-color: #d8a; }
+.flag.on .qcheck { background: #b3261e; border-color: #b3261e; }
+.flag.on .qt { color: #b3261e; font-weight: 600; }
+
+/* bottom bar */
+.bottombar { position: fixed; bottom: 0; left: 0; right: 0; background: #0f4c81; color: #fff;
+  padding: 10px 14px; display: flex; gap: 10px; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; flex-wrap: wrap; }
+.bottombar button { background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.4);
+  border-radius: 8px; padding: 6px 12px; font-size: 12.5px; cursor: pointer; }
+.hint { background: #fff8e6; border: 1px solid #ead9a0; border-radius: 10px;
+  padding: 9px 12px; font-size: 12.5px; color: #6b5a10; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Reunião escolar — ao vivo</h1>
+  <div class="sub">Criança de 5 anos · Entrevista de admissão · toque na pergunta = feita · avalie cada tópico ao fechar</div>
+
+  <div class="scoreboard">
+    <div class="scorerow">
+      <span class="pill alta" id="pAlta">ALTA: –</span>
+      <span class="pill i" id="pI">I: 0</span>
+      <span class="pill p" id="pP">P: 0</span>
+      <span class="pill s" id="pS">D: 0</span>
+      <span class="pill" style="background:#eef2f7;color:#556" id="pFlags">⚑ 0</span>
+    </div>
+    <div class="verdict neutral" id="verdict">Comece pelas perguntas ALTA. O veredito aparece aqui conforme você avalia.</div>
+  </div>
+
+  <div class="hint" id="hintBox">💡 Dica do momento: abra com a seção 1 e deixe a seção 4 para quando a conversa estiver aquecida. Peça sempre: "me conta um caso real".</div>
+
+  <div id="topics"></div>
+
+  <div class="flags" id="flagsCard">
+    <div class="thead" onclick="toggleCard('flagsCard')"><h2>⚑ Pontos de atenção — marque se ouvir</h2><span class="tstate">red flags</span></div>
+    <div class="tbody" id="flagsBody"></div>
+  </div>
+</div>
+
+<div class="bottombar">
+  <span id="barTxt">0/0 perguntas · 0/7 tópicos avaliados</span>
+  <button onclick="exportNotes()">Copiar resumo</button>
+  <button onclick="if(confirm('Zerar tudo?')){localStorage.removeItem(KEY);location.reload()}">Reiniciar</button>
+</div>
+
+<script>
+const KEY = 'school-meeting-v1';
+
+const DATA = [
+ {name:'1. Proposta pedagógica e dia a dia', qs:[
+   {t:'Dia típico de uma criança de 5 anos? Brincadeira livre vs. dirigida?', h:1},
+   {t:'Papel da alfabetização nessa idade? Pressão acadêmica ou socioemocional?', h:1},
+   {t:'Programa bilíngue na prática: imersão, carga, método?'},
+   {t:'Currículo socioemocional — exemplo concreto de atividade?'},
+   {t:'Base teórica da abordagem pedagógica e socioemocional? Quem garante que vira prática?', h:1},
+   {t:'Tempo ao ar livre e movimento por dia?'},
+   {t:'Tecnologia na rotina dos pequenos?'}],
+  regua:{i:'Slogans sem rotina concreta · brincadeira como "recreio" · alfabetização forçada · não nomeia base teórica',
+         p:'Rotina equilibrada genérica, cita BNCC · nomeia base teórica sem explicar a prática',
+         s:'Descreve o dia hora a hora · brincadeira como instrumento pedagógico · base teórica + quem garante aplicação'}},
+ {name:'2. Equipe e relação adulto-criança', qs:[
+   {t:'Quantas crianças por turma, quantos adultos em sala?', h:1},
+   {t:'Formação dos professores? Formação continuada?'},
+   {t:'Rotatividade da equipe?'},
+   {t:'Quem mais circula na rotina (auxiliares, especialistas, psicóloga)?'}],
+  regua:{i:'Não sabe o ratio · 1 adulto p/ 20+ · desconversa rotatividade',
+         p:'Ratio padrão (15-20 c/ auxiliar) · formação formal citada',
+         s:'Ratio melhor que padrão dito de cabeça · formação com calendário · professores antigos, pelo nome'}},
+ {name:'3. Acompanhamento, comunicação e comunidade', qs:[
+   {t:'Como documentam o desenvolvimento individual? Frequência de devolutivas?', h:1},
+   {t:'Se percebem algo numa criança: qual o protocolo? Quem, quando, como?', h:1},
+   {t:'Canais do dia a dia: agenda, app, professor direto?'},
+   {t:'Reuniões de pais: formato e frequência?'},
+   {t:'Como as famílias participam da vida escolar? Eventos, conselho, voluntariado?'},
+   {t:'Existe comunidade ativa de pais? O que a escola faz pra cultivá-la?'}],
+  regua:{i:'Devolutiva só em boletim/festa · "se acontecer algo a gente chama" · famílias só chamadas pra festa e cobrança',
+         p:'App + reuniões semestrais + portfólio · protocolo vago · eventos pontuais sem vida própria',
+         s:'Documentação sistemática · protocolo c/ prazos e responsável · comunidade de pais ativa com participação real'}},
+ {name:'4. Inclusão e neurodivergência ★', critical:true, qs:[
+   {t:'Professores treinados p/ reconhecer sinais (TEA, TDAH, linguagem, sensorial)? Que treinamento?', h:1},
+   {t:'Existe triagem estruturada, ou depende do olhar individual do professor?', h:1},
+   {t:'"Me contem um caso real, passo a passo" — quando perceberam algo, o que aconteceu?', h:1},
+   {t:'Equipe de inclusão própria? Quem compõe? Proporção por aluno?', h:1},
+   {t:'Plano individual (PEI): quem monta, quem revisa, com que frequência?', h:1},
+   {t:'Terapeutas externos: entram na escola, falam com professores, observam em sala?'},
+   {t:'Limite de crianças com necessidades específicas por turma? Custo extra (mediador)?', h:1},
+   {t:'Quantas crianças neurodivergentes estudam aqui hoje? Trajetórias?'},
+   {t:'Alguma família saiu por insatisfação com inclusão? O que aprenderam?'},
+   {t:'Como as outras crianças são educadas pra conviver com a diferença?'}],
+  regua:{i:'"Nunca tivemos esse problema" · sem equipe própria · identificação só no olhar do professor · terapeuta externo não entra · custo surpresa — QUALQUER UM = corte',
+         p:'Equipe citada, PEI mencionado, treinamento eventual · sem caso concreto, sem números',
+         s:'Triagem com instrumento nomeado · equipe com nomes e cargos · caso real contado incl. erros · custos transparentes antes de perguntar'}},
+ {name:'5. Adaptação e acolhimento', qs:[
+   {t:'Período de adaptação pra criança de 5 anos vinda de outra escola?', h:1},
+   {t:'Choro, birra, separação: filosofia de manejo?'},
+   {t:'Disciplina: punição ou regulação emocional?'},
+   {t:'Conflitos entre crianças (mordida, briga, exclusão)?'},
+   {t:'Comportamento agressivo recorrente: protocolo? Quando as duas famílias entram?', h:1},
+   {t:'Bullying aos 5 anos: a escola reconhece? Como previne e intervém?'}],
+  regua:{i:'Adaptação engessada · disciplina punitiva · nega bullying na Ed. Infantil · recorrente tratado como pontual',
+         p:'Adaptação gradual c/ pais · manejo sem método · admite recorrência mas protocolo vago',
+         s:'Adaptação no ritmo da criança · filosofia nomeada · protocolo de recorrência c/ etapas e as duas famílias · prevenção de bullying no currículo'}},
+ {name:'6. Estrutura, segurança e rotina prática', qs:[
+   {t:'Horários, integral/parcial, incluído vs. extra na mensalidade?', h:1},
+   {t:'Alimentação: cardápio, restrições, nutricionista?'},
+   {t:'Segurança: entrada/saída, quem busca, emergências médicas?'},
+   {t:'Extracurriculares pra essa idade?'}],
+  regua:{i:'Opacidade nos custos · segurança vaga · extras obrigatórios disfarçados',
+         p:'Custos claros quando perguntados · protocolos padrão',
+         s:'Transparência total antes de pedir, incl. reajuste · nutricionista própria · protocolos detalhados com naturalidade'}},
+ {name:'7. Processo de admissão e próximos passos', qs:[
+   {t:'Etapas do processo a partir daqui e prazos?', h:1},
+   {t:'Avaliação ou período de experiência para a criança?'},
+   {t:'Vaga disponível e fila de espera?'},
+   {t:'Valores: matrícula, mensalidade, material, reajuste?'}],
+  regua:{i:'Pressão de venda ("vaga acaba essa semana") · processo confuso · avaliação como prova',
+         p:'Etapas e prazos claros · avaliação como conhecer a criança',
+         s:'Perguntam genuinamente sobre a criança antes de falar de vaga · avaliação como acolhimento · convidam 2ª visita com ele'}},
+];
+
+const FLAGS = [
+ 'Resposta genérica sem exemplo concreto (2x ou mais)',
+ '"Nunca tivemos esse problema aqui"',
+ 'Empurram identificação de neurodivergência só pra família',
+ 'Equipe de inclusão sem nomes/cargos (existe só no papel)',
+ 'Custo surpresa de mediador/acompanhante',
+ 'Terapeuta externo não entra na escola',
+ 'Pressão de venda na vaga',
+ 'Evasivas sobre rotatividade de professores',
+ 'Disciplina punitiva normalizada',
+ 'Não fizeram nenhuma pergunta sobre a criança',
+];
+
+let S = JSON.parse(localStorage.getItem(KEY) || 'null') || {q:{}, rate:{}, notes:{}, flags:{}};
+const save = () => localStorage.setItem(KEY, JSON.stringify(S));
+
+const $topics = document.getElementById('topics');
+DATA.forEach((tp, ti) => {
+  const card = document.createElement('div');
+  card.className = 'topic' + (ti === 0 ? ' open' : '');
+  card.id = 'tp' + ti;
+  let qhtml = tp.qs.map((q, qi) => {
+    const id = ti + '-' + qi;
+    return `<div class="q ${S.q[id] ? 'done' : ''}" data-id="${id}" onclick="toggleQ(this)">
+      <div class="qcheck">${S.q[id] ? '✓' : ''}</div>
+      <div class="qt">${q.h ? '<span class="tag">ALTA</span>' : ''}${q.t}</div></div>`;
+  }).join('');
+  const r = tp.regua;
+  card.innerHTML = `
+    <div class="thead" onclick="toggleCard('tp${ti}')">
+      <h2>${tp.name}</h2><span class="tstate" id="st${ti}"></span>
+    </div>
+    <div class="tbody">
+      ${qhtml}
+      <div class="regua">
+        <h3>Régua de leitura</h3>
+        <div class="lvl i"><b>INSUFICIENTE (corte):</b> ${r.i}</div>
+        <div class="lvl p"><b>PREVISÍVEL:</b> ${r.p}</div>
+        <div class="lvl s"><b>DIFERENCIAL:</b> ${r.s}</div>
+        <div class="rate">
+          <button class="bi" onclick="rate(${ti},'I',this)">Insuficiente</button>
+          <button class="bp" onclick="rate(${ti},'P',this)">Previsível</button>
+          <button class="bs" onclick="rate(${ti},'S',this)">Diferencial</button>
+        </div>
+        <textarea placeholder="Anotações do tópico…" oninput="note(${ti},this.value)">${S.notes[ti] || ''}</textarea>
+      </div>
+    </div>`;
+  $topics.appendChild(card);
+  if (S.rate[ti]) {
+    const map = {I:'.bi', P:'.bp', S:'.bs'};
+    card.querySelector(map[S.rate[ti]]).classList.add('sel');
+  }
+});
+
+const $fb = document.getElementById('flagsBody');
+FLAGS.forEach((f, fi) => {
+  const d = document.createElement('div');
+  d.className = 'flag' + (S.flags[fi] ? ' on' : '');
+  d.innerHTML = `<div class="qcheck">${S.flags[fi] ? '!' : ''}</div><div class="qt">${f}</div>`;
+  d.onclick = () => { S.flags[fi] = !S.flags[fi]; save();
+    d.classList.toggle('on'); d.querySelector('.qcheck').textContent = S.flags[fi] ? '!' : ''; refresh(); };
+  $fb.appendChild(d);
+});
+
+function toggleCard(id) { document.getElementById(id).classList.toggle('open'); }
+function toggleQ(el) {
+  const id = el.dataset.id;
+  S.q[id] = !S.q[id]; save();
+  el.classList.toggle('done');
+  el.querySelector('.qcheck').textContent = S.q[id] ? '✓' : '';
+  refresh();
+}
+function rate(ti, v, btn) {
+  S.rate[ti] = (S.rate[ti] === v) ? null : v; save();
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('sel'));
+  if (S.rate[ti]) btn.classList.add('sel');
+  refresh();
+}
+function note(ti, v) { S.notes[ti] = v; save(); }
+
+function refresh() {
+  let altaTotal = 0, altaDone = 0, qTotal = 0, qDone = 0;
+  DATA.forEach((tp, ti) => tp.qs.forEach((q, qi) => {
+    qTotal++; const done = S.q[ti + '-' + qi];
+    if (done) qDone++;
+    if (q.h) { altaTotal++; if (done) altaDone++; }
+  }));
+  const counts = {I:0, P:0, S:0};
+  Object.values(S.rate).forEach(v => { if (v) counts[v]++; });
+  const flags = Object.values(S.flags).filter(Boolean).length;
+  const rated = Object.values(S.rate).filter(Boolean).length;
+
+  document.getElementById('pAlta').textContent = `ALTA: ${altaDone}/${altaTotal}`;
+  document.getElementById('pI').textContent = 'I: ' + counts.I;
+  document.getElementById('pP').textContent = 'P: ' + counts.P;
+  document.getElementById('pS').textContent = 'D: ' + counts.S;
+  document.getElementById('pFlags').textContent = '⚑ ' + flags;
+  document.getElementById('barTxt').textContent = `${qDone}/${qTotal} perguntas · ${rated}/7 tópicos avaliados`;
+
+  DATA.forEach((tp, ti) => {
+    const d = tp.qs.filter((q, qi) => S.q[ti + '-' + qi]).length;
+    const r = S.rate[ti] ? ` · nota: ${S.rate[ti] === 'S' ? 'D' : S.rate[ti]}` : '';
+    document.getElementById('st' + ti).textContent = `${d}/${tp.qs.length}${r}`;
+  });
+
+  const v = document.getElementById('verdict');
+  const s4 = S.rate[3];
+  if (s4 === 'I') {
+    v.className = 'verdict bad';
+    v.textContent = '🚨 Seção 4 (neurodivergência) avaliada como INSUFICIENTE — eliminatório.';
+  } else if (counts.I > 0) {
+    v.className = 'verdict warn';
+    v.textContent = `⚠️ ${counts.I} tópico(s) em Insuficiente. Investigue antes de avançar.`;
+  } else if (rated >= 5 && counts.S >= 3 && (s4 === 'S' || s4 === 'P')) {
+    v.className = 'verdict ok';
+    v.textContent = '✅ Perfil forte: sem cortes, vários diferenciais. Candidata real — considere 2ª visita com a criança.';
+  } else if (rated >= 5) {
+    v.className = 'verdict warn';
+    v.textContent = 'Escola "Previsível": aceitável, mas sem diferencial claro. Compare com a próxima da lista.';
+  } else if (flags >= 3) {
+    v.className = 'verdict warn';
+    v.textContent = `⚠️ ${flags} red flags marcadas. Atenção redobrada.`;
+  } else {
+    v.className = 'verdict neutral';
+    v.textContent = altaDone < altaTotal
+      ? `Faltam ${altaTotal - altaDone} perguntas ALTA. Priorize-as.`
+      : 'Todas as ALTA feitas ✓ — agora avalie os tópicos pendentes.';
+  }
+
+  const hints = [
+    [() => !S.q['3-2'], '💡 A pergunta mais reveladora: "me contem um caso real, passo a passo" (seção 4). Escola sem estrutura trava nela.'],
+    [() => s4 == null && altaDone > 5, '💡 Já dá pra avaliar a seção 4. Não saia da reunião sem essa nota.'],
+    [() => !S.q['6-0'] && qDone > 18, '💡 Antes de encerrar: etapas e prazos do processo (seção 7).'],
+    [() => true, '💡 Fechamento forte: "o que vocês gostariam de saber sobre o nosso filho?" — escola boa devolve a pergunta com interesse genuíno.'],
+  ];
+  document.getElementById('hintBox').textContent = hints.find(h => h[0]())[1];
+}
+
+function exportNotes() {
+  let out = `REUNIÃO ESCOLAR — ${new Date().toLocaleDateString('pt-BR')}\n\n`;
+  const counts = {I:0, P:0, S:0};
+  DATA.forEach((tp, ti) => {
+    const r = S.rate[ti] || '—';
+    if (S.rate[ti]) counts[S.rate[ti]]++;
+    out += `${tp.name}: ${r === 'I' ? 'INSUFICIENTE' : r === 'P' ? 'PREVISÍVEL' : r === 'S' ? 'DIFERENCIAL' : 'não avaliado'}\n`;
+    if (S.notes[ti]) out += `  Notas: ${S.notes[ti]}\n`;
+  });
+  out += `\nPlacar: I=${counts.I} P=${counts.P} D=${counts.S}\n`;
+  const fl = FLAGS.filter((f, fi) => S.flags[fi]);
+  if (fl.length) out += `\nRED FLAGS:\n` + fl.map(f => '- ' + f).join('\n') + '\n';
+  navigator.clipboard.writeText(out).then(() => alert('Resumo copiado! Cole no chat comigo depois da reunião que eu organizo a análise.'));
+}
+
+refresh();
+</script>
+</body>
+</html>
