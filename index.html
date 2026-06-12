@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reunião escolar — checklist ao vivo</title>
+<title>Reunião 2 — Coordenadora · checklist ao vivo</title>
 <style>
 :root { color-scheme: light; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,16 +29,26 @@ h1 { font-size: 19px; margin-bottom: 2px; }
 .verdict.bad { background: #fbe9e7; color: #b3261e; }
 .verdict.neutral { background: #eef2f7; color: #556; }
 
+/* resumo R1 */
+.r1 { background: #fff; border: 1.5px solid #b9d8c2; border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+.r1 .thead h2 { color: #1b6e3c; }
+.r1grp { margin-bottom: 10px; }
+.r1grp h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #1b6e3c; margin-bottom: 4px; }
+.r1grp ul { list-style: none; }
+.r1grp li { font-size: 13px; color: #344; padding: 3px 0 3px 10px; border-left: 3px solid #b9d8c2; margin-bottom: 3px; }
+
 /* topics */
 .topic { background: #fff; border: 1px solid #d8e0ea; border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+.topic.critical { border: 1.5px solid #0f4c81; }
 .thead { display: flex; justify-content: space-between; align-items: center; gap: 8px;
   padding: 11px 13px; cursor: pointer; user-select: none; }
 .thead h2 { font-size: 14.5px; color: #0f4c81; }
 .tstate { font-size: 11px; color: #889; white-space: nowrap; }
 .tbody { padding: 0 13px 12px; display: none; }
-.topic.open .tbody { display: block; }
+.topic.open .tbody, .r1.open .tbody { display: block; }
+.r1 .tbody { display: none; padding: 0 13px 12px; }
 .q { display: flex; gap: 9px; align-items: flex-start; padding: 7px 8px; border-radius: 8px;
-  cursor: pointer; margin-bottom: 2px; }
+  cursor: pointer; margin-bottom: 2px; flex-wrap: wrap; }
 .q:hover { background: #f4f7fb; }
 .q.done { opacity: .45; }
 .q.done .qt { text-decoration: line-through; }
@@ -46,7 +56,9 @@ h1 { font-size: 19px; margin-bottom: 2px; }
   margin-top: 1px; display: flex; align-items: center; justify-content: center;
   font-size: 13px; color: #fff; }
 .q.done .qcheck { background: #0f4c81; border-color: #0f4c81; }
-.qt { font-size: 13.5px; }
+.qt { font-size: 13.5px; flex: 1; min-width: 200px; }
+.known { width: 100%; font-size: 11.5px; color: #8a6d00; background: #fdf8e3;
+  border-radius: 6px; padding: 4px 8px; margin: 2px 0 0 28px; }
 .tag { font-size: 10px; font-weight: 700; color: #b3261e; background: #fbe9e7;
   border-radius: 4px; padding: 1px 5px; margin-right: 4px; vertical-align: 1px; }
 
@@ -87,8 +99,8 @@ textarea { width: 100%; margin-top: 9px; border: 1px solid #cdd8e4; border-radiu
 </head>
 <body>
 <div class="wrap">
-  <h1>Reunião escolar — ao vivo</h1>
-  <div class="sub">Criança de 5 anos · Entrevista de admissão · toque na pergunta = feita · avalie cada tópico ao fechar</div>
+  <h1>Reunião 2 — Coordenadora</h1>
+  <div class="sub">Só o que ficou pendente ou parcial na Reunião 1 (admissões, 12 jun 2026) · toque na pergunta = feita · amarelo = o que já sabemos</div>
 
   <div class="scoreboard">
     <div class="scorerow">
@@ -98,10 +110,15 @@ textarea { width: 100%; margin-top: 9px; border: 1px solid #cdd8e4; border-radiu
       <span class="pill s" id="pS">D: 0</span>
       <span class="pill" style="background:#eef2f7;color:#556" id="pFlags">⚑ 0</span>
     </div>
-    <div class="verdict neutral" id="verdict">Comece pelas perguntas ALTA. O veredito aparece aqui conforme você avalia.</div>
+    <div class="verdict neutral" id="verdict">Abra com a seção 1 (inclusão) — é o bloco que a Reunião 1 não cobriu e o motivo desta conversa.</div>
   </div>
 
-  <div class="hint" id="hintBox">💡 Dica do momento: abra com a seção 1 e deixe a seção 4 para quando a conversa estiver aquecida. Peça sempre: "me conta um caso real".</div>
+  <div class="hint" id="hintBox">💡 Pendência nossa: a entrevistadora perguntou sobre alergias e acompanhamentos e a resposta ficou em aberto — levar isso resolvido.</div>
+
+  <div class="r1" id="r1Card">
+    <div class="thead" onclick="toggleCard('r1Card')"><h2>✅ Já respondido na Reunião 1 — não gastar tempo</h2><span class="tstate">resumo</span></div>
+    <div class="tbody" id="r1Body"></div>
+  </div>
 
   <div id="topics"></div>
 
@@ -112,112 +129,143 @@ textarea { width: 100%; margin-top: 9px; border: 1px solid #cdd8e4; border-radiu
 </div>
 
 <div class="bottombar">
-  <span id="barTxt">0/0 perguntas · 0/7 tópicos avaliados</span>
+  <span id="barTxt">0/0 perguntas · 0/6 tópicos avaliados</span>
   <button onclick="exportNotes()">Copiar resumo</button>
   <button onclick="if(confirm('Zerar tudo?')){localStorage.removeItem(KEY);location.reload()}">Reiniciar</button>
 </div>
 
 <script>
-const KEY = 'school-meeting-v1';
+const KEY = 'school-meeting-v2';
+
+const ANSWERED = [
+ {g:'Bilinguismo e currículo', items:[
+   'Infantil: 80% inglês / 20% português → Fund ~50/50 → Médio com trilha (IB completo ou vestibular/ENEM)',
+   'Music, Arts e PE em inglês do infantil ao médio; alfabetização simultânea nas duas línguas, sem repetir conteúdo',
+   'Currículo IPC interdisciplinar por projetos; inspiração Reggio Emilia nos pequenos (brinquedos não estruturados)',
+   'IB só nos 2 anos finais — base (critical thinking, sistematização) trabalhada ao longo dos anos; nota média dos alunos acima da média mundial (~33 vs ~30)']},
+ {g:'Socioemocional', items:[
+   'Programa estruturado obrigatório desde o infantil: identificação de emoções, role plays, bichinhos com significado, assemblies nos maiores',
+   'Drama desde o infantil; public speaking como disciplina no Fund, ministrada pelo headmaster']},
+ {g:'Tecnologia', items:[
+   'Celular proibido (antes mesmo da lei); Chromebook bloqueado só a partir do 4º ano; iPad pontual (fotografar projetos)',
+   'Makerspace desde o infantil + parceria Lego Education; letramento digital com critérios de fontes confiáveis']},
+ {g:'Comunicação e avaliação', items:[
+   'Dois canais: app institucional (cardápio, grade, infos) + app de mensagens direto com professores; recepção pra emergências',
+   'Do 3º/4º ano em diante: cycle tests semanais com study guide (roteiro de estudo); notas comunicadas após cada avaliação']},
+ {g:'Turmas e estrutura', items:[
+   '1º ano 2027: 2 turmas de ~20-25; infantil começa com 15; teto 25 (Fund) / 28 (Médio); capacidade total ~1.100',
+   'After School: música (referência Suzuki, violino), vocalização, skate no espaço multiuso do 5º andar',
+   'Prédio projetado por especialista em espaços educacionais; piazzas coletivas em todos os andares']},
+ {g:'Admissão', items:[
+   'Sem teste admissional nessa faixa etária; reserva de vaga R$ 3.500, abatida da 1ª mensalidade; documentação com a consultora de admissões',
+   'Coordenadora já avisada — esta reunião agendada via consultora']},
+];
 
 const DATA = [
- {name:'1. Proposta pedagógica e dia a dia', qs:[
-   {t:'Dia típico de uma criança de 5 anos? Brincadeira livre vs. dirigida?', h:1},
-   {t:'Papel da alfabetização nessa idade? Pressão acadêmica ou socioemocional?', h:1},
-   {t:'Programa bilíngue na prática: imersão, carga, método?'},
-   {t:'Currículo socioemocional — exemplo concreto de atividade?'},
-   {t:'Base teórica da abordagem pedagógica e socioemocional? Quem garante que vira prática?', h:1},
-   {t:'Tempo ao ar livre e movimento por dia?'},
-   {t:'Tecnologia na rotina dos pequenos?'}],
-  regua:{i:'Slogans sem rotina concreta · brincadeira como "recreio" · alfabetização forçada · não nomeia base teórica',
-         p:'Rotina equilibrada genérica, cita BNCC · nomeia base teórica sem explicar a prática',
-         s:'Descreve o dia hora a hora · brincadeira como instrumento pedagógico · base teórica + quem garante aplicação'}},
- {name:'2. Equipe e relação adulto-criança', qs:[
-   {t:'Quantas crianças por turma, quantos adultos em sala?', h:1},
-   {t:'Formação dos professores? Formação continuada?'},
-   {t:'Rotatividade da equipe?'},
-   {t:'Quem mais circula na rotina (auxiliares, especialistas, psicóloga)?'}],
-  regua:{i:'Não sabe o ratio · 1 adulto p/ 20+ · desconversa rotatividade',
-         p:'Ratio padrão (15-20 c/ auxiliar) · formação formal citada',
-         s:'Ratio melhor que padrão dito de cabeça · formação com calendário · professores antigos, pelo nome'}},
- {name:'3. Acompanhamento, comunicação e comunidade', qs:[
-   {t:'Como documentam o desenvolvimento individual? Frequência de devolutivas?', h:1},
-   {t:'Se percebem algo numa criança: qual o protocolo? Quem, quando, como?', h:1},
-   {t:'Canais do dia a dia: agenda, app, professor direto?'},
-   {t:'Reuniões de pais: formato e frequência?'},
-   {t:'Como as famílias participam da vida escolar? Eventos, conselho, voluntariado?'},
-   {t:'Existe comunidade ativa de pais? O que a escola faz pra cultivá-la?'}],
-  regua:{i:'Devolutiva só em boletim/festa · "se acontecer algo a gente chama" · famílias só chamadas pra festa e cobrança',
-         p:'App + reuniões semestrais + portfólio · protocolo vago · eventos pontuais sem vida própria',
-         s:'Documentação sistemática · protocolo c/ prazos e responsável · comunidade de pais ativa com participação real'}},
- {name:'4. Inclusão e neurodivergência ★', critical:true, qs:[
-   {t:'Professores treinados p/ reconhecer sinais (TEA, TDAH, linguagem, sensorial)? Que treinamento?', h:1},
-   {t:'Existe triagem estruturada, ou depende do olhar individual do professor?', h:1},
-   {t:'"Me contem um caso real, passo a passo" — quando perceberam algo, o que aconteceu?', h:1},
-   {t:'Equipe de inclusão própria? Quem compõe? Proporção por aluno?', h:1},
+ {name:'1. Inclusão e neurodivergência ★', critical:true, qs:[
+   {t:'Professores treinados p/ reconhecer sinais (TEA, TDAH, linguagem, sensorial)? Que treinamento, com que frequência?', h:1},
+   {t:'Existe triagem estruturada (instrumento nomeado), ou depende do olhar individual do professor?', h:1},
+   {t:'"Me contem um caso real, passo a passo" — institucional, com o que deu errado', h:1,
+    k:'R1 trouxe só anedota pessoal da entrevistadora (sobrinho com altas habilidades que "floresceu")'},
+   {t:'Célula de inclusão: quem compõe (nomes e cargos)? Proporção por aluno?', h:1,
+    k:'R1: existe célula liderada por psicopedagoga; atua mesmo sem laudo; faz prova adaptada. Sem nomes, sem números'},
    {t:'Plano individual (PEI): quem monta, quem revisa, com que frequência?', h:1},
    {t:'Terapeutas externos: entram na escola, falam com professores, observam em sala?'},
-   {t:'Limite de crianças com necessidades específicas por turma? Custo extra (mediador)?', h:1},
+   {t:'Custo extra de mediador/acompanhante? Limite de crianças com necessidades específicas por turma?', h:1,
+    k:'⚠ Pergunta feita na R1 e NÃO respondida — a conversa mudou de assunto. Insistir até número claro'},
    {t:'Quantas crianças neurodivergentes estudam aqui hoje? Trajetórias?'},
-   {t:'Alguma família saiu por insatisfação com inclusão? O que aprenderam?'},
-   {t:'Como as outras crianças são educadas pra conviver com a diferença?'}],
-  regua:{i:'"Nunca tivemos esse problema" · sem equipe própria · identificação só no olhar do professor · terapeuta externo não entra · custo surpresa — QUALQUER UM = corte',
+   {t:'Famílias que saíram por insatisfação com inclusão — o que a escola aprendeu?',
+    k:'Temos relato direto de uma família próxima que saiu em 2025. Ouvir a versão da escola'}],
+  regua:{i:'"Nunca tivemos esse problema" · sem equipe nomeada · identificação só no olhar do professor · terapeuta externo não entra · custo de mediador segue opaco — QUALQUER UM = corte',
          p:'Equipe citada, PEI mencionado, treinamento eventual · sem caso concreto, sem números',
-         s:'Triagem com instrumento nomeado · equipe com nomes e cargos · caso real contado incl. erros · custos transparentes antes de perguntar'}},
- {name:'5. Adaptação e acolhimento', qs:[
-   {t:'Período de adaptação pra criança de 5 anos vinda de outra escola?', h:1},
-   {t:'Choro, birra, separação: filosofia de manejo?'},
-   {t:'Disciplina: punição ou regulação emocional?'},
-   {t:'Conflitos entre crianças (mordida, briga, exclusão)?'},
-   {t:'Comportamento agressivo recorrente: protocolo? Quando as duas famílias entram?', h:1},
-   {t:'Bullying aos 5 anos: a escola reconhece? Como previne e intervém?'}],
-  regua:{i:'Adaptação engessada · disciplina punitiva · nega bullying na Ed. Infantil · recorrente tratado como pontual',
-         p:'Adaptação gradual c/ pais · manejo sem método · admite recorrência mas protocolo vago',
-         s:'Adaptação no ritmo da criança · filosofia nomeada · protocolo de recorrência c/ etapas e as duas famílias · prevenção de bullying no currículo'}},
- {name:'6. Estrutura, segurança e rotina prática', qs:[
-   {t:'Horários, integral/parcial, incluído vs. extra na mensalidade?', h:1},
-   {t:'Alimentação: cardápio, restrições, nutricionista?'},
-   {t:'Segurança: entrada/saída, quem busca, emergências médicas?'},
-   {t:'Extracurriculares pra essa idade?'}],
-  regua:{i:'Opacidade nos custos · segurança vaga · extras obrigatórios disfarçados',
+         s:'Triagem com instrumento nomeado · equipe com nomes e cargos · caso real contado incl. erros · custos transparentes sem insistência'}},
+ {name:'2. Sala de aula na prática (1º ano)', qs:[
+   {t:'Rotina hora a hora de uma criança de 5-6 anos no 1º ano: chegada → saída', h:1,
+    k:'R1 deu a filosofia (piazzas, propostas dentro/fora de sala, sensibilidade da educadora) — falta o concreto'},
+   {t:'Tempo ao ar livre e movimento POR DIA?', h:1,
+    k:'Crítico: a criança vem de rotina com muito ar livre e atividade física diária'},
+   {t:'Quantos adultos em sala no 1º ano? Professora + assistente? Ratio exato', h:1,
+    k:'R1: assistente citada de passagem no infantil, sem cravar o ratio'},
+   {t:'Quem observa o professor em sala pra garantir que a proposta pedagógica vira prática? Com que frequência?',
+    k:'R1 nomeou as bases (Reggio Emilia, IPC) mas o "quem garante" ficou aberto'},
+   {t:'Período de adaptação pra criança vinda de outra escola e de outro país?', h:1},
+   {t:'Terceiro idioma (espanhol): existe? Depende de quórum?',
+    k:'R1 ficou de checar e não voltou com a resposta'}],
+  regua:{i:'Não sabe descrever o dia · ar livre só "quando dá" · sem adaptação estruturada',
+         p:'Rotina genérica · adaptação gradual padrão',
+         s:'Descreve o dia hora a hora · ar livre diário garantido · adaptação no ritmo da criança, com plano'}},
+ {name:'3. Equipe e suporte ao professor', qs:[
+   {t:'O que mudou no corpo docente de 2024 pra 2025? Por quê?', h:1,
+    k:'R1: "turnover baixo, só 2 saídas" — mas relatos de várias famílias apontam queda de qualidade em 2025. Confrontar com elegância'},
+   {t:'Suporte de saúde mental e equilíbrio do professor — o que existe?', h:1,
+    k:'Relato de professor chorando em sala em 2025. A R1 respondeu com política de comportamento DOS ALUNOS — outra pergunta'},
+   {t:'Formação continuada: calendário, conteúdo, quem dá?',
+    k:'R1: seleção rigorosa (proficiência em inglês, licenciatura no Fund2+, fit cultural); continuada citada sem detalhe'},
+   {t:'Professor novato: quem acompanha em sala nos primeiros meses?'}],
+  regua:{i:'Desconversa a mudança 24→25 · zero estrutura de suporte ao docente',
+         p:'Admite mudanças, explica genericamente · formação formal citada',
+         s:'Explica o que houve com transparência · suporte estruturado ao professor · formação com calendário'}},
+ {name:'4. Disciplina e conflitos', qs:[
+   {t:'Relato de "castigo" em sala: o que é permitido ao professor fazer? O que é vetado?', h:1,
+    k:'R1 não negou o relato; respondeu com a política formal (combinados → advertência → suspensão)'},
+   {t:'Choro, birra, separação: filosofia de manejo nomeada?'},
+   {t:'Agressão recorrente entre crianças: protocolo com etapas? Quando as DUAS famílias entram?', h:1,
+    k:'R1: conversa + circle time no episódio pontual; recorrência caiu em advertência/suspensão, sem detalhe das famílias'},
+   {t:'Bullying na Educação Infantil: prevenção e intervenção específicas pros pequenos?',
+    k:'R1: reconhece que existe, assemblies nos maiores — faltou o recorte infantil'}],
+  regua:{i:'Castigo normalizado · recorrente tratado como pontual · punição como única ferramenta',
+         p:'Manejo dialogado mas sem método · protocolo vago',
+         s:'Filosofia nomeada · vetos claros ao professor · protocolo de recorrência com etapas e as duas famílias'}},
+ {name:'5. Acompanhamento individual e famílias', qs:[
+   {t:'Como documentam o desenvolvimento no infantil/1º ano? Portfólio? Frequência de devolutivas?', h:1,
+    k:'R1 detalhou só o Fund (cycle tests do 3º ano em diante) — faltam os pequenos'},
+   {t:'Se percebem algo numa criança: quem aciona, em quanto tempo, como a família entra?', h:1},
+   {t:'Reuniões de pais: formato e frequência?'},
+   {t:'Famílias na vida escolar: eventos, conselho, voluntariado? Comunidade ativa de pais?'}],
+  regua:{i:'Devolutiva só em boletim/festa · "se acontecer algo a gente chama"',
+         p:'Reuniões semestrais + app · protocolo vago',
+         s:'Documentação sistemática dos pequenos · protocolo com prazos e responsável · comunidade de pais com vida real'}},
+ {name:'6. Prático e custos', qs:[
+   {t:'Tabela completa: mensalidade, material, reajuste anual?', h:1,
+    k:'R1: só a reserva de vaga (R$ 3.500, abatida da 1ª mensalidade)'},
+   {t:'Horário integral: o que está incluído vs pago à parte? After School é extra?', h:1},
+   {t:'Alimentação: restrições, nutricionista própria?', k:'R1: cardápio disponível no app'},
+   {t:'Segurança: entrada/saída, quem pode buscar, emergências médicas?'}],
+  regua:{i:'Opacidade nos custos · extras obrigatórios disfarçados · segurança vaga',
          p:'Custos claros quando perguntados · protocolos padrão',
          s:'Transparência total antes de pedir, incl. reajuste · nutricionista própria · protocolos detalhados com naturalidade'}},
- {name:'7. Processo de admissão e próximos passos', qs:[
-   {t:'Etapas do processo a partir daqui e prazos?', h:1},
-   {t:'Avaliação ou período de experiência para a criança?'},
-   {t:'Vaga disponível e fila de espera?'},
-   {t:'Valores: matrícula, mensalidade, material, reajuste?'}],
-  regua:{i:'Pressão de venda ("vaga acaba essa semana") · processo confuso · avaliação como prova',
-         p:'Etapas e prazos claros · avaliação como conhecer a criança',
-         s:'Perguntam genuinamente sobre a criança antes de falar de vaga · avaliação como acolhimento · convidam 2ª visita com ele'}},
 ];
 
 const FLAGS = [
+ 'Custo de mediador segue sem resposta (já desviou 1x na R1)',
+ 'Equipe de inclusão continua sem nomes/cargos (R1: só "psicopedagoga")',
+ 'Evasiva de novo sobre a mudança no corpo docente 24→25',
+ 'Disciplina punitiva como única resposta (advertência/suspensão pra tudo)',
  'Resposta genérica sem exemplo concreto (2x ou mais)',
  '"Nunca tivemos esse problema aqui"',
  'Empurram identificação de neurodivergência só pra família',
- 'Equipe de inclusão sem nomes/cargos (existe só no papel)',
- 'Custo surpresa de mediador/acompanhante',
  'Terapeuta externo não entra na escola',
- 'Pressão de venda na vaga',
- 'Evasivas sobre rotatividade de professores',
- 'Disciplina punitiva normalizada',
- 'Não fizeram nenhuma pergunta sobre a criança',
+ 'Promete "checar e voltar" sem prazo (R1: 3º idioma ficou sem retorno)',
 ];
 
 let S = JSON.parse(localStorage.getItem(KEY) || 'null') || {q:{}, rate:{}, notes:{}, flags:{}};
 const save = () => localStorage.setItem(KEY, JSON.stringify(S));
 
+const $r1 = document.getElementById('r1Body');
+$r1.innerHTML = ANSWERED.map(g =>
+  `<div class="r1grp"><h3>${g.g}</h3><ul>${g.items.map(i => `<li>${i}</li>`).join('')}</ul></div>`).join('');
+
 const $topics = document.getElementById('topics');
 DATA.forEach((tp, ti) => {
   const card = document.createElement('div');
-  card.className = 'topic' + (ti === 0 ? ' open' : '');
+  card.className = 'topic' + (tp.critical ? ' critical' : '') + (ti === 0 ? ' open' : '');
   card.id = 'tp' + ti;
   let qhtml = tp.qs.map((q, qi) => {
     const id = ti + '-' + qi;
     return `<div class="q ${S.q[id] ? 'done' : ''}" data-id="${id}" onclick="toggleQ(this)">
       <div class="qcheck">${S.q[id] ? '✓' : ''}</div>
-      <div class="qt">${q.h ? '<span class="tag">ALTA</span>' : ''}${q.t}</div></div>`;
+      <div class="qt">${q.h ? '<span class="tag">ALTA</span>' : ''}${q.t}</div>
+      ${q.k ? `<div class="known">${q.k}</div>` : ''}</div>`;
   }).join('');
   const r = tp.regua;
   card.innerHTML = `
@@ -289,7 +337,7 @@ function refresh() {
   document.getElementById('pP').textContent = 'P: ' + counts.P;
   document.getElementById('pS').textContent = 'D: ' + counts.S;
   document.getElementById('pFlags').textContent = '⚑ ' + flags;
-  document.getElementById('barTxt').textContent = `${qDone}/${qTotal} perguntas · ${rated}/7 tópicos avaliados`;
+  document.getElementById('barTxt').textContent = `${qDone}/${qTotal} perguntas · ${rated}/6 tópicos avaliados`;
 
   DATA.forEach((tp, ti) => {
     const d = tp.qs.filter((q, qi) => S.q[ti + '-' + qi]).length;
@@ -298,19 +346,19 @@ function refresh() {
   });
 
   const v = document.getElementById('verdict');
-  const s4 = S.rate[3];
-  if (s4 === 'I') {
+  const s1 = S.rate[0];
+  if (s1 === 'I') {
     v.className = 'verdict bad';
-    v.textContent = '🚨 Seção 4 (neurodivergência) avaliada como INSUFICIENTE — eliminatório.';
+    v.textContent = '🚨 Seção 1 (inclusão) avaliada como INSUFICIENTE — eliminatório. Era a segunda chance.';
   } else if (counts.I > 0) {
     v.className = 'verdict warn';
     v.textContent = `⚠️ ${counts.I} tópico(s) em Insuficiente. Investigue antes de avançar.`;
-  } else if (rated >= 5 && counts.S >= 3 && (s4 === 'S' || s4 === 'P')) {
+  } else if (rated >= 4 && counts.S >= 3 && (s1 === 'S' || s1 === 'P')) {
     v.className = 'verdict ok';
-    v.textContent = '✅ Perfil forte: sem cortes, vários diferenciais. Candidata real — considere 2ª visita com a criança.';
-  } else if (rated >= 5) {
+    v.textContent = '✅ Pendências cobertas com perfil forte. Dá pra decidir: comparar com a 2ª escola e considerar visita com a criança.';
+  } else if (rated >= 4) {
     v.className = 'verdict warn';
-    v.textContent = 'Escola "Previsível": aceitável, mas sem diferencial claro. Compare com a próxima da lista.';
+    v.textContent = 'Respostas "Previsíveis": aceitável, sem diferencial. Pesar contra a 2ª opção.';
   } else if (flags >= 3) {
     v.className = 'verdict warn';
     v.textContent = `⚠️ ${flags} red flags marcadas. Atenção redobrada.`;
@@ -318,20 +366,20 @@ function refresh() {
     v.className = 'verdict neutral';
     v.textContent = altaDone < altaTotal
       ? `Faltam ${altaTotal - altaDone} perguntas ALTA. Priorize-as.`
-      : 'Todas as ALTA feitas ✓ — agora avalie os tópicos pendentes.';
+      : 'Todas as ALTA feitas ✓ — agora avalie os tópicos.';
   }
 
   const hints = [
-    [() => !S.q['3-2'], '💡 A pergunta mais reveladora: "me contem um caso real, passo a passo" (seção 4). Escola sem estrutura trava nela.'],
-    [() => s4 == null && altaDone > 5, '💡 Já dá pra avaliar a seção 4. Não saia da reunião sem essa nota.'],
-    [() => !S.q['6-0'] && qDone > 18, '💡 Antes de encerrar: etapas e prazos do processo (seção 7).'],
-    [() => true, '💡 Fechamento forte: "o que vocês gostariam de saber sobre o nosso filho?" — escola boa devolve a pergunta com interesse genuíno.'],
+    [() => !S.q['0-6'], '💡 A pergunta do custo de mediador já foi desviada uma vez. Desta vez, espere o número antes de mudar de assunto.'],
+    [() => !S.q['0-2'], '💡 "Me contem um caso real, passo a passo" — institucional. Se travar de novo, é sinal.'],
+    [() => s1 == null && altaDone > 5, '💡 Já dá pra avaliar a seção 1. Não saia da reunião sem essa nota.'],
+    [() => true, '💡 Fechamento: "o que vocês gostariam de saber sobre o nosso filho?" — escola boa devolve com interesse genuíno.'],
   ];
   document.getElementById('hintBox').textContent = hints.find(h => h[0]())[1];
 }
 
 function exportNotes() {
-  let out = `REUNIÃO ESCOLAR — ${new Date().toLocaleDateString('pt-BR')}\n\n`;
+  let out = `REUNIÃO 2 (COORDENADORA) — ${new Date().toLocaleDateString('pt-BR')}\n\n`;
   const counts = {I:0, P:0, S:0};
   DATA.forEach((tp, ti) => {
     const r = S.rate[ti] || '—';
