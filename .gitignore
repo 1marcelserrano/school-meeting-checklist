@@ -1,0 +1,26 @@
+# === Segredos / credenciais ===
+.env
+.env.*
+*.local.json
+settings.local.json
+*.pem
+*.key
+*_rsa
+*.p12
+secrets/
+.claude/settings.local.json
+
+# === Dependências / build ===
+node_modules/
+dist/
+build/
+.next/
+.cache/
+*.log
+
+# === Sistema / editor ===
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
